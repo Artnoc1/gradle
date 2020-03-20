@@ -98,11 +98,6 @@ class NestedRuntimeBeanNode extends AbstractNestedRuntimeBeanNode {
         }
 
         @Override
-        public void attachProducer(Task producer) {
-            // Ignore
-        }
-
-        @Override
         public void maybeFinalizeValue() {
             // Ignore
         }
