@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 the original author or authors.
+ * Copyright 2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package org.gradle.process.internal.worker.child;
+package org.gradle.process.internal.worker;
 
-import org.gradle.internal.remote.ObjectConnection;
-import org.gradle.internal.service.ServiceRegistry;
+import java.io.Serializable;
 
-public interface WorkerContext {
-    ClassLoader getApplicationClassLoader();
-    ObjectConnection getServerConnection();
-    ServiceRegistry getServiceRegistry();
+/**
+ * Handles requests to do work in worker process. Is instantiated in the build process and serialized to the worker process.
+ */
+public interface RequestHandler<IN, OUT> extends Serializable {
+    /**
+     * Executes the given request and returns the response. Called in the worker process only.
+     */
+    OUT run(IN request);
 }

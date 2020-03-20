@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,22 @@
  * limitations under the License.
  */
 
-package org.gradle.plugins.javascript.jshint.internal;
+package Gradle_Check.configurations
 
-public interface JsHintProtocol {
-    JsHintResult process(JsHintSpec spec);
-}
+val triggerExcludes = """
+        -:.idea
+        -:.github
+        -:.teamcity
+        -:.teamcityTest
+        -:subprojects/docs/src/docs/release
+    """.trimIndent()
+
+val masterReleaseBranchFilter = """
+    +:master
+    +:release
+""".trimIndent()
+
+val allBranchesFilter = """
+    +:*
+    -:<default>
+""".trimIndent()

@@ -17,16 +17,13 @@
 package org.gradle.smoketests
 
 import org.gradle.integtests.fixtures.ToBeFixedForInstantExecution
-import org.gradle.integtests.fixtures.UnsupportedWithInstantExecution
 import org.gradle.integtests.fixtures.android.AndroidHome
 import org.gradle.testkit.runner.BuildResult
-import org.gradle.util.GradleVersion
 import org.gradle.testkit.runner.GradleRunner
-import org.gradle.util.Requires
+import org.gradle.util.GradleVersion
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
-import static org.gradle.util.TestPrecondition.KOTLIN_SCRIPT
 
 class KotlinPluginSmokeTest extends AbstractSmokeTest {
 
@@ -100,8 +97,7 @@ class KotlinPluginSmokeTest extends AbstractSmokeTest {
     }
 
     @Unroll
-    @Requires(KOTLIN_SCRIPT)
-    @UnsupportedWithInstantExecution(iterationMatchers = ".*kotlin js 1\\.3\\.[2-6].*")
+    @ToBeFixedForInstantExecution
     def 'kotlin js #version plugin, workers=#workers'() {
         given:
         useSample("kotlin-js-sample")
@@ -130,8 +126,7 @@ class KotlinPluginSmokeTest extends AbstractSmokeTest {
     }
 
     @Unroll
-    @Requires(KOTLIN_SCRIPT)
-    @UnsupportedWithInstantExecution(iterationMatchers = ".*kotlin 1\\.3\\.[2-6].*")
+    @ToBeFixedForInstantExecution
     def 'kotlin #kotlinVersion and groovy plugins combined'() {
         given:
         buildFile << """
