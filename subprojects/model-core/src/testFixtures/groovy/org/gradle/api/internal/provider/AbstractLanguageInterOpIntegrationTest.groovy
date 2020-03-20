@@ -17,14 +17,13 @@
 package org.gradle.api.internal.provider
 
 import org.gradle.integtests.fixtures.AbstractIntegrationSpec
+import org.gradle.integtests.fixtures.KotlinDslTestUtil
 import org.gradle.integtests.fixtures.executer.ExecutionFailure
 import org.gradle.test.fixtures.file.TestFile
 
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
-
-import static org.gradle.integtests.fixtures.KotlinDslTestUtil.getKotlinDslBuildSrcScript
 
 class AbstractLanguageInterOpIntegrationTest extends AbstractIntegrationSpec {
     TestFile pluginDir = file("buildSrc/plugin")
@@ -34,7 +33,7 @@ class AbstractLanguageInterOpIntegrationTest extends AbstractIntegrationSpec {
         if (!buildfile.file) {
             buildfile.createFile()
         }
-        buildfile.text = kotlinDslBuildSrcScript + buildfile.text
+        buildfile.text = KotlinDslTestUtil.kotlinDslBuildSrcScript + buildfile.text
     }
 
     def setup() {
