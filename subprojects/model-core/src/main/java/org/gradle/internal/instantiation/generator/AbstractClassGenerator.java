@@ -316,20 +316,14 @@ abstract class AbstractClassGenerator implements ClassGenerator {
             }
         }
 
-        visitFields(type, generationHandlers);
+        visitFields(classDetails, generationHandlers);
     }
 
-    private void visitFields(Class<?> type, List<ClassGenerationHandler> generationHandlers) {
-        for (Field field : type.getDeclaredFields()) {
-            if (!Modifier.isStatic(field.getModifiers())) {
-                for (ClassGenerationHandler handler : generationHandlers) {
-                    handler.hasFields();
-                }
-                return;
+    private void visitFields(ClassDetails type, List<ClassGenerationHandler> generationHandlers) {
+        if (!type.getInstanceFields().isEmpty()) {
+            for (ClassGenerationHandler handler : generationHandlers) {
+                handler.hasFields();
             }
-        }
-        if (type.getSuperclass() != null && type.getSuperclass() != Object.class) {
-            visitFields(type.getSuperclass(), generationHandlers);
         }
     }
 
@@ -341,6 +335,9 @@ abstract class AbstractClassGenerator implements ClassGenerator {
             }
             for (Method method : property.getSetters()) {
                 propertyMetaData.addSetter(method);
+            }
+            if (property.getBackingField() != null) {
+                propertyMetaData.field(property.getBackingField());
             }
         }
         for (Method method : classDetails.getInstanceMethods()) {
@@ -382,16 +379,16 @@ abstract class AbstractClassGenerator implements ClassGenerator {
     }
 
     private static boolean isManagedType(PropertyMetadata property) {
-        return MANAGED_PROPERTY_TYPES.contains(property.getType()) || property.getMainGetter().method.getAnnotation(Nested.class) != null;
+        return MANAGED_PROPERTY_TYPES.contains(property.getType()) || property.hasAnnotation(Nested.class);
     }
 
     private static boolean isManagedType(MethodMetadata method) {
         return MANAGED_PROPERTY_TYPES.contains(method.getReturnType()) || method.method.getAnnotation(Nested.class) != null;
     }
 
-    private boolean isRoleType(MethodMetadata method) {
+    private boolean isRoleType(PropertyMetadata property) {
         for (Class<? extends Annotation> roleAnnotation : roleHandler.getAnnotationTypes()) {
-            if (method.method.getAnnotation(roleAnnotation) != null) {
+            if (property.hasAnnotation(roleAnnotation)) {
                 return true;
             }
         }
@@ -584,6 +581,7 @@ abstract class AbstractClassGenerator implements ClassGenerator {
         private final List<Method> setters = new ArrayList<>();
         private final List<Method> setMethods = new ArrayList<>();
         private MethodMetadata mainGetter;
+        private Field backingField;
 
         private PropertyMetadata(String name) {
             this.name = name;
@@ -608,6 +606,14 @@ abstract class AbstractClassGenerator implements ClassGenerator {
 
         public boolean isWritable() {
             return !setters.isEmpty();
+        }
+
+        public boolean hasAnnotation(Class<? extends Annotation> type) {
+            if (backingField != null) {
+                return backingField.getAnnotation(type) != null;
+            } else {
+                return mainGetter.method.getAnnotation(type) != null;
+            }
         }
 
         public MethodMetadata getMainGetter() {
@@ -668,6 +674,10 @@ abstract class AbstractClassGenerator implements ClassGenerator {
 
         public void addSetMethod(Method method) {
             setMethods.add(method);
+        }
+
+        public void field(Field backingField) {
+            this.backingField = backingField;
         }
     }
 
@@ -914,14 +924,9 @@ abstract class AbstractClassGenerator implements ClassGenerator {
                 visitor.mixInConventionAware();
             }
             for (PropertyMetadata property : conventionProperties) {
-                boolean managedProperty = isManagedProperty(property);
-                for (MethodMetadata getter : property.getOverridableGetters()) {
-                    boolean attachOwner = managedProperty && isManagedType(getter);
-                    boolean applyRole = attachOwner && isRoleType(getter);
-                    if (applyRole) {
-                        visitor.instantiatesNestedObjects();
-                        return;
-                    }
+                boolean managedProperty = isManagedProperty(property) && isRoleType(property) && !property.getOverridableGetters().isEmpty();
+                if (managedProperty) {
+                    visitor.instantiatesNestedObjects();
                 }
             }
         }
@@ -937,9 +942,9 @@ abstract class AbstractClassGenerator implements ClassGenerator {
             for (PropertyMetadata property : conventionProperties) {
                 visitor.applyConventionMappingToProperty(property);
                 boolean managedProperty = isManagedProperty(property);
+                boolean applyRole = managedProperty && isRoleType(property);
                 for (MethodMetadata getter : property.getOverridableGetters()) {
                     boolean attachOwner = managedProperty && isManagedType(getter);
-                    boolean applyRole = attachOwner && isRoleType(getter);
                     visitor.applyConventionMappingToGetter(property, getter, attachOwner, applyRole);
                 }
                 for (Method setter : property.getOverridableSetters()) {
@@ -1007,7 +1012,7 @@ abstract class AbstractClassGenerator implements ClassGenerator {
                 visitor.instantiatesNestedObjects();
             }
             for (PropertyMetadata property : eagerAttachProperties) {
-                boolean applyRole = isRoleType(property.getMainGetter());
+                boolean applyRole = isRoleType(property);
                 visitor.attachDuringConstruction(property, applyRole);
             }
         }
@@ -1025,8 +1030,9 @@ abstract class AbstractClassGenerator implements ClassGenerator {
             }
             for (PropertyMetadata property : readOnlyProperties) {
                 visitor.applyManagedStateToProperty(property);
+                boolean applyRole = isRoleType(property);
                 for (MethodMetadata getter : property.getters) {
-                    visitor.applyReadOnlyManagedStateToGetter(property, getter.method, isRoleType(getter));
+                    visitor.applyReadOnlyManagedStateToGetter(property, getter.method, applyRole);
                 }
             }
             if (!hasFields) {
